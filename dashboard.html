@@ -15,6 +15,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Newsreader:ital,wght@0,500;1,500;1,600&family=Outfit:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
 
+<!-- Core Datasets & DOM Bridge Loaded First in Head -->
+<script src="templates_data.js"></script>
+<script src="qbank_data.js"></script>
+<script src="approaches_im.js"></script>
+<script src="symptom_ddx_engine.js"></script>
+<script src="mermaid.min.js"></script>
+
 <style>
   :root {
     --maroon-950: #2A0A12;
@@ -16947,6 +16954,33 @@ input:focus-visible,
   };
 
   window.openContentModal = async function(item){
+    if (!item) return;
+
+    // Direct fallback if body was evaluated before bridge or element reference was empty
+    if ((!item.body || item.body.trim() === '') && !item.mermaid && !item.isQbank) {
+      if (item.targetId) {
+        var targetEl = document.getElementById(item.targetId);
+        if (targetEl && (targetEl.textContent || targetEl.innerHTML)) {
+          item.body = targetEl.textContent || targetEl.innerHTML;
+        } else if (window.TOPIC_TEMPLATES && window.TOPIC_TEMPLATES[item.targetId]) {
+          item.body = window.TOPIC_TEMPLATES[item.targetId];
+        }
+      }
+      // If still empty, search TOPIC_TEMPLATES by title matching or template keys
+      if ((!item.body || item.body.trim() === '') && window.TOPIC_TEMPLATES) {
+        var cleanTitle = (item.title || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        for (var tKey in window.TOPIC_TEMPLATES) {
+          if (Object.prototype.hasOwnProperty.call(window.TOPIC_TEMPLATES, tKey)) {
+            var val = window.TOPIC_TEMPLATES[tKey];
+            if (val && cleanTitle.length > 5 && val.toLowerCase().replace(/[^a-z0-9]/g, '').indexOf(cleanTitle.slice(0, 20)) !== -1) {
+              item.body = val;
+              break;
+            }
+          }
+        }
+      }
+    }
+
     document.getElementById('contentModalTitleText').textContent = item.title;
     var body = document.getElementById('contentModalBody');
 
@@ -17785,20 +17819,10 @@ const TOPIC_MAPPED_MCQS = window.TOPIC_MAPPED_MCQS || {};
 
 
 
-    <!-- Phase 4 Data Separation: External QBank & Templates -->
-  <script src="qbank_data.js"></script>
-  <script src="templates_data.js"></script>
-  <!-- Section 4 Ward Approaches Engine & Dataset -->
-  <script src="approaches_im.js"></script>
-  <!-- Phase 1 Global Instant Search Engine (Ctrl+K) -->
+  <!-- Additional Interactive Engines -->
   <script src="spotlight_search.js"></script>
-  <!-- Cross-Specialty Hyperlinking & Navigation Engine -->
   <script src="crosslinks_nav.js"></script>
-  <!-- Split-Screen Side-by-Side Comparison Engine -->
   <script src="split-compare-module.js"></script>
-  <!-- Bedside Symptom-to-DDx Matcher & Section 2 Bridge Engine -->
-  <script src="symptom_ddx_engine.js"></script>
-  <script src="mermaid.min.js"></script>
   
   <script>
     // PWA & Hospital Ward Offline Service Worker Registration
